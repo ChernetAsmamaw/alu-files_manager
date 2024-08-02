@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 import { contentType } from 'mime-types';
 import mongoDBCore from 'mongodb/lib/core';
 import dbClient from '../utils/db.js';
-import { getUserFromXToken } from '../utils/auth.js';
+import { getUserFromXToken } from '../utils/auth';
 
 // Declare the valid file types
 const VALID_FILE_TYPES = {

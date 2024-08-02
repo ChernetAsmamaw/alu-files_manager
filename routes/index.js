@@ -1,12 +1,8 @@
-// Setup express router
-
-import express from 'express';
-
 // Import all the controllers
 import AppController from '../controllers/AppController';
 import UsersController from '../controllers/UsersController';
-import AuthController from '../controllers/AuthController.js';
-import FilesController from '../controllers/FilesController.js';
+import AuthController from '../controllers/AuthController';
+import FilesController from '../controllers/FilesController';
 
 // Import the middlewares
 import { basicAuthenticate, xTokenAuthenticate } from '../middlewares/auth';
@@ -40,7 +36,7 @@ const injectRoutes = (api) => {
   });
 
   api.use(errorResponse);
-}
+};
 
 // Export the router
 export default injectRoutes;
