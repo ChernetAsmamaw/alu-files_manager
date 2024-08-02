@@ -27,7 +27,7 @@ class RedisClient {
   async get(key) {
     return promisify(this.client.GET).bind(this.client)(key);
   }
-  
+
   // Store a key-value pair + expiration time in the redis server
   async set(key, value, duration) {
     await promisify(this.client.SETEX).bind(this.client)(key, duration, value);

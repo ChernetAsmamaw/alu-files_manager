@@ -4,8 +4,7 @@
 import mongodb from 'mongodb';
 // eslint-disable-next-line no-unused-vars
 import Collection from 'mongodb/lib/collection';
-import envLoader from './env_loader.js';
-
+import envLoader from './env_loader';
 
 // Class representing a mongodb client
 class DBClinet {
@@ -20,7 +19,7 @@ class DBClinet {
     this.client = new mongodb.MongoClient(dbURL, { useUnifiedTopology: true });
     this.client.connect();
   }
-  
+
   // Check if the client is connected to the database
   isAlive() {
     return this.client.isConnected();

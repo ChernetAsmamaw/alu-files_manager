@@ -3,15 +3,14 @@
 import express from 'express';
 
 // Import all the controllers
-import AppController from '../controllers/AppController.js';
-import UsersController from '../controllers/UsersController.js';
+import AppController from '../controllers/AppController';
+import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController.js';
 import FilesController from '../controllers/FilesController.js';
 
 // Import the middlewares
-import { basicAuthenticate, xTokenAuthenticate } from '../middlewares/auth.js';
-import { APIError, errorResponse } from '../middlewares/error.js';
-
+import { basicAuthenticate, xTokenAuthenticate } from '../middlewares/auth';
+import { APIError, errorResponse } from '../middlewares/error';
 
 // Inject the routes with their handlers to the given express app
 const injectRoutes = (api) => {
@@ -34,7 +33,6 @@ const injectRoutes = (api) => {
   api.put('/files/:id/publish', xTokenAuthenticate, FilesController.putPublish);
   api.put('/files/:id/unpublish', xTokenAuthenticate, FilesController.putUnpublish);
   api.get('/files/:id/data', FilesController.getFile);
-
 
   // api.all is used to catch all the other routes that are not defined
   api.all('*', (req, res, next) => {

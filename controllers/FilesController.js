@@ -13,7 +13,6 @@ import mongoDBCore from 'mongodb/lib/core';
 import dbClient from '../utils/db.js';
 import { getUserFromXToken } from '../utils/auth.js';
 
-
 // Declare the valid file types
 const VALID_FILE_TYPES = {
     folder: 'folder',
@@ -110,7 +109,6 @@ export default class FilesController {
       }
     }
 
-    
     const userId = user._id.toString();
 
     // All file will be stored locally in a folder
@@ -164,7 +162,6 @@ export default class FilesController {
         : parentId,
     });
   }
-
 
   /*
   Method to get a file by its id
