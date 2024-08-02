@@ -6,7 +6,11 @@ import mongoDBCore from 'mongodb/lib/core';
 import dbClient from './db';
 import redisClient from './redis';
 
-// Fetches the user from the Authorization header in the given request object.
+/**
+ * Fetches the user from the Authorization header in the given request object.
+ * @param {Request} req The Express request object.
+ * @returns {Promise<{_id: ObjectId, email: string, password: string}>}
+ */
 export const getUserFromAuthorization = async (req) => {
   const authorization = req.headers.authorization || null;
 
@@ -30,7 +34,11 @@ export const getUserFromAuthorization = async (req) => {
   return user;
 };
 
-// Fetches the user from the X-Token header in the given request object.
+/**
+ * Fetches the user from the X-Token header in the given request object.
+ * @param {Request} req The Express request object.
+ * @returns {Promise<{_id: ObjectId, email: string, password: string}>}
+ */
 export const getUserFromXToken = async (req) => {
   const token = req.headers['x-token'];
 

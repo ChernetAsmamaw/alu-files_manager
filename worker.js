@@ -11,58 +11,62 @@ const writeFileAsync = promisify(writeFile);
 const fileQueue = new Queue('thumbnail generation');
 const userQueue = new Queue('email sending');
 
-
-/*
-Generate thumbnail for the image with a given width size
-*/
+/**
+ * Generates the thumbnail of an image with a given width size.
+ * @param {String} filePath The location of the original file.
+ * @param {number} size The width of the thumbnail.
+ * @returns {Promise<void>}
+ */
 const generateThumbnail = async (filePath, size) => {
   const buffer = await imgThumbnail(filePath, { width: size });
-  console.log('Generating file: ${filePath}, size: ${size}');
+  console.log(`Generating file: ${filePath}, size: ${size}`);
   return writeFileAsync(`${filePath}_${size}`, buffer);
 };
 
 fileQueue.process(async (job, done) => {
   const fileId = job.data.fileId || null;
-  const userID = job.data.userID || null;
+  const userId = job.data.userId || null;
 
-  if (!fileId) return done(new Error('Missing fileId'));
-  if (!userID) return done(new Error('Missing userID'));
-
+  if (!fileId) {
+    throw new Error('Missing fileId');
+  }
+  if (!userId) {
+    throw new Error('Missing userId');
+  }
   console.log('Processing', job.data.name || '');
-  const file = await (await dbClient.filesCollection()).findOne({
-    _id: new mongoDBCore.BSON.ObjectId(fileId),
-    userID: new mongoDBCore.BSON.ObjectId(userID),
-  });
-
-  if (!file) return done(new Error('File not found'));
-
+  const file = await (await dbClient.filesCollection())
+    .findOne({
+      _id: new mongoDBCore.BSON.ObjectId(fileId),
+      userId: new mongoDBCore.BSON.ObjectId(userId),
+    });
+  if (!file) {
+    throw new Error('File not found');
+  }
   const sizes = [500, 250, 100];
-
-  Promise.all(sizes.map((size) => generateThumbnail(file.localPath, size))).then(() => {
-    console.log('Thumbnails generated');
-    done();
-  });
+  Promise.all(sizes.map((size) => generateThumbnail(file.localPath, size)))
+    .then(() => {
+      done();
+    });
 });
 
 userQueue.process(async (job, done) => {
   const userId = job.data.userId || null;
 
-  if (!userId) return done(new Error('Missing userId'));
-  
+  if (!userId) {
+    throw new Error('Missing userId');
+  }
   const user = await (await dbClient.usersCollection())
-  .findOne({ _id: new mongoDBCore.BSON.ObjectId(userId) });
-
-  if (!user) return done(new Error('User not found'));
-
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(userId) });
+  if (!user) {
+    throw new Error('User not found');
+  }
   console.log(`Welcome ${user.email}!`);
-
-  // send an email to the user with a welcome message
   try {
-    const mailSubject = 'Welcome to The Multilingual Files Manager';
+    const mailSubject = 'Welcome to ALU-Files_Manager by Chernet';
     const mailContent = [
       '<div>',
       '<h3>Hello {{user.name}},</h3>',
-      'Welcome to <a href="https://github.com/ChernetAsmamaw/Multilingual-File-Manager-Application">',
+      'Welcome to <a href="https://github.com/ChernetAsmamaw/alu-files_manager">',
       'Multilingual File Manager</a>, ',
       'a simple file management API built with Node.js by ',
       '<a href="https://github.com/ChernetAsmamaw">Chernet</a> and ',

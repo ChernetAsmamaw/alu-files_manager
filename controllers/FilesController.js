@@ -1,56 +1,41 @@
 /* eslint-disable import/no-named-as-default */
 /* eslint-disable no-unused-vars */
-
 import { tmpdir } from 'os';
 import { promisify } from 'util';
 import Queue from 'bull/lib/queue';
 import { v4 as uuidv4 } from 'uuid';
-import { mkdir, writeFile, stat, existsSync, realpath } from 'fs';
+import {
+  mkdir, writeFile, stat, existsSync, realpath,
+} from 'fs';
 import { join as joinPath } from 'path';
 import { Request, Response } from 'express';
 import { contentType } from 'mime-types';
 import mongoDBCore from 'mongodb/lib/core';
-import dbClient from '../utils/db.js';
+import dbClient from '../utils/db';
 import { getUserFromXToken } from '../utils/auth';
 
-// Declare the valid file types
 const VALID_FILE_TYPES = {
-    folder: 'folder',
-    file: 'file',
-    image: 'image',
+  folder: 'folder',
+  file: 'file',
+  image: 'image',
 };
-
-// Path to the root folder
 const ROOT_FOLDER_ID = 0;
 const DEFAULT_ROOT_FOLDER = 'files_manager';
-
-// 
 const mkDirAsync = promisify(mkdir);
 const writeFileAsync = promisify(writeFile);
 const statAsync = promisify(stat);
 const realpathAsync = promisify(realpath);
-
-// Maximum number of files per page for pagination
 const MAX_FILES_PER_PAGE = 20;
-
-// Create a new queue
-const filesQueue = new Queue('thumbnail generation');
-
-// Create a new Bull queue
+const fileQueue = new Queue('thumbnail generation');
 const NULL_ID = Buffer.alloc(24, '0').toString('utf-8');
-
-const isValidID = (id) => {
+const isValidId = (id) => {
   const size = 24;
-  let i =0;
-
-  // Define the ranges of valid characters
+  let i = 0;
   const charRanges = [
-    [48, 57], // 0-9
-    [97, 102], // a-f
-    [65, 70], // A-F
+    [48, 57], // 0 - 9
+    [97, 102], // a - f
+    [65, 70], // A - F
   ];
-
-  // Check if the id is a string and has the correct length
   if (typeof id !== 'string' || id.length !== size) {
     return false;
   }
@@ -66,13 +51,13 @@ const isValidID = (id) => {
   return true;
 };
 
-// FileController class: contains the methods to manage files
 export default class FilesController {
-  /*
-  Method to upload a file
-  */
+  /**
+   * Uploads a file.
+   * @param {Request} req The Express request object.
+   * @param {Response} res The Express response object.
+   */
   static async postUpload(req, res) {
-    // File creation requirements
     const { user } = req;
     const name = req.body ? req.body.name : null;
     const type = req.body ? req.body.type : null;
@@ -80,7 +65,6 @@ export default class FilesController {
     const isPublic = req.body && req.body.isPublic ? req.body.isPublic : false;
     const base64Data = req.body && req.body.data ? req.body.data : '';
 
-    // Validate the input
     if (!name) {
       res.status(400).json({ error: 'Missing name' });
       return;
@@ -108,19 +92,12 @@ export default class FilesController {
         return;
       }
     }
-
     const userId = user._id.toString();
-
-    // All file will be stored locally in a folder
-    // The relative path of this folder is given by the environment variable FOLDER_PATH.
-    // If this variable is not present or empty, use /tmp/files_manager as storing folder path.
     const baseDir = `${process.env.FOLDER_PATH || ''}`.trim().length > 0
       ? process.env.FOLDER_PATH.trim()
       : joinPath(tmpdir(), DEFAULT_ROOT_FOLDER);
     // default baseDir == '/tmp/files_manager'
     // or (on Windows) '%USERPROFILE%/AppData/Local/Temp/files_manager';
-
-    // Create a new file object with the given attributes
     const newFile = {
       userId: new mongoDBCore.BSON.ObjectId(userId),
       name,
@@ -130,22 +107,15 @@ export default class FilesController {
         ? '0'
         : new mongoDBCore.BSON.ObjectId(parentId),
     };
-
-    // Create the base directory if it doesn't exist
     await mkDirAsync(baseDir, { recursive: true });
-
-    // Store the file in clear in this local path
     if (type !== VALID_FILE_TYPES.folder) {
       const localPath = joinPath(baseDir, uuidv4());
       await writeFileAsync(localPath, Buffer.from(base64Data, 'base64'));
       newFile.localPath = localPath;
     }
-
-    // Add the new file document in the collection files with these attributes
     const insertionInfo = await (await dbClient.filesCollection())
       .insertOne(newFile);
     const fileId = insertionInfo.insertedId.toString();
-
     // start thumbnail generation worker
     if (type === VALID_FILE_TYPES.image) {
       const jobName = `Image thumbnail [${userId}-${fileId}]`;
@@ -163,22 +133,16 @@ export default class FilesController {
     });
   }
 
-  /*
-  Method to get a file by its id
-  */
   static async getShow(req, res) {
     const { user } = req;
     const id = req.params ? req.params.id : NULL_ID;
     const userId = user._id.toString();
-
-    // Find the file with the given id and userId
     const file = await (await dbClient.filesCollection())
       .findOne({
         _id: new mongoDBCore.BSON.ObjectId(isValidId(id) ? id : NULL_ID),
         userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID),
       });
 
-    // Validate the request
     if (!file) {
       res.status(404).json({ error: 'Not found' });
       return;
@@ -195,8 +159,10 @@ export default class FilesController {
     });
   }
 
-  /*
-  Method to get the index of files
+  /**
+   * Retrieves files associated with a specific user.
+   * @param {Request} req The Express request object.
+   * @param {Response} res The Express response object.
    */
   static async getIndex(req, res) {
     const { user } = req;
@@ -211,7 +177,6 @@ export default class FilesController {
         : new mongoDBCore.BSON.ObjectId(isValidId(parentId) ? parentId : NULL_ID),
     };
 
-    // Paginate the results
     const files = await (await (await dbClient.filesCollection())
       .aggregate([
         { $match: filesFilter },
@@ -235,9 +200,6 @@ export default class FilesController {
     res.status(200).json(files);
   }
 
-  /*
-  Method to publish a file
-  */
   static async putPublish(req, res) {
     const { user } = req;
     const { id } = req.params;
@@ -296,9 +258,11 @@ export default class FilesController {
     });
   }
 
-  /*
-  Mwthod to get a file by its id
-  */
+  /**
+   * Retrieves the content of a file.
+   * @param {Request} req The Express request object.
+   * @param {Response} res The Express response object.
+   */
   static async getFile(req, res) {
     const user = await getUserFromXToken(req);
     const { id } = req.params;

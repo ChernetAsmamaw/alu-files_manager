@@ -1,8 +1,8 @@
-// enviroment variables loader
-
 import { existsSync, readFileSync } from 'fs';
 
-// Loads the appropriate environment variables for an event.
+/**
+ * Loads the appropriate environment variables for an event.
+ */
 const envLoader = () => {
   const env = process.env.npm_lifecycle_event || 'dev';
   const path = env.includes('test') || env.includes('cover') ? '.env.test' : '.env';
