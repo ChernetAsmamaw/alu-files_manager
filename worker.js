@@ -4,9 +4,8 @@ import { promisify } from 'util';
 import Queue from 'bull/lib/queue';
 import imgThumbnail from 'image-thumbnail';
 import mongoDBCore from 'mongodb/lib/core';
-import dbClient from './utils/db.js';
-import Mailer from './utils/mailer.js';
-
+import dbClient from './utils/db';
+import Mailer from './utils/mailer';
 
 const writeFileAsync = promisify(writeFile);
 const fileQueue = new Queue('thumbnail generation');
@@ -22,8 +21,6 @@ const generateThumbnail = async (filePath, size) => {
   return writeFileAsync(`${filePath}_${size}`, buffer);
 };
 
-
-//
 fileQueue.process(async (job, done) => {
   const fileId = job.data.fileId || null;
   const userID = job.data.userID || null;
@@ -69,7 +66,6 @@ userQueue.process(async (job, done) => {
       'Multilingual File Manager</a>, ',
       'a simple file management API built with Node.js by ',
       '<a href="https://github.com/ChernetAsmamaw">Chernet</a> and ',
-      '<a href="https://github.com/BevilMulore">Bevil</a>.',
       'We hope it meets your needs.',
       '</div>',
     ].join('');
