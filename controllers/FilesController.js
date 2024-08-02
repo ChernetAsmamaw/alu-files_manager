@@ -173,9 +173,10 @@ export default class FilesController {
     const filesFilter = {
       userId: user._id,
       parentId: parentId === ROOT_FOLDER_ID.toString()
-        ? parentId
+        ? '0'
         : new mongoDBCore.BSON.ObjectId(isValidId(parentId) ? parentId : NULL_ID),
     };
+    
 
     const files = await (await (await dbClient.filesCollection())
       .aggregate([
